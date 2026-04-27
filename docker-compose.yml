@@ -16,7 +16,7 @@ services:
       - redis
 
   redis:
-    image: redis:latest
+    image: redis:8.6.2
     container_name: go-api-tools-redis
     command: [ "redis-server", "--requirepass", "${REDIS_PASSWORD}" ]
     environment:
