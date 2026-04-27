@@ -9,10 +9,13 @@ Simple tools API built with Go (Gin) using clean architecture.
 - CORS ready
 
 ## Environment Variables
-Set the following environment variables:
-```
-PORT=8080
-CORS_ORIGIN=https://www.kekasi.co.id
+Set the following environment variables (see `.env.example`):
+```env
+HTTP_PORT=8080
+CORS_ORIGIN=https://kekasi.co.id,*
+REDIS_ADDR=redis:6379
+REDIS_PASSWORD=
+REDIS_DB=0
 ```
 
 ## How to Run
