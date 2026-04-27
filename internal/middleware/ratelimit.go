@@ -53,10 +53,13 @@ func RateLimit() gin.HandlerFunc {
 		// Increment the request count for the IP
 		count, err := rdb.Incr(ctx, key).Result()
 		if err != nil {
+			log.Printf("RateLimit Redis error for IP %s: %v", ip, err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 			c.Abort()
 			return
 		}
+
+		log.Printf("Request count for IP %s: %d", ip, count)
 
 		// Set expiration for the key if it's new
 		if count == 1 {
@@ -70,5 +73,6 @@ func RateLimit() gin.HandlerFunc {
 		}
 
 		c.Next()
+
 	}
 }
