@@ -41,7 +41,7 @@ REDIS_DB=0
 ## Docker Deployment
 1. Build and start using Docker Compose:
    ```bash
-   docker-compose up --build
+   docker-compose up --build -d
    ```
 2. Stop services:
    ```bash
