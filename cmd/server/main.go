@@ -8,9 +8,16 @@ import (
 	"github.com/kekasicoid/go-api-tools/internal/middleware"
 	"github.com/kekasicoid/go-api-tools/internal/usecase"
 	"github.com/kekasicoid/go-api-tools/pkg/jsonutil"
+	"github.com/kekasicoid/go-api-tools/pkg/logger"
 )
 
 func main() {
+	// init logger
+	logger.Init()
+	defer logger.Sync()
+
+	logger.Log.Info("starting server")
+
 	// init dependency
 	formatter := jsonutil.NewJSONFormatter()
 	usecase := usecase.NewFormatterUsecase(formatter)
@@ -22,6 +29,7 @@ func main() {
 	// middleware
 	r.Use(middleware.CORS())
 	r.Use(middleware.RateLimit())
+	r.Use(middleware.RequestLogger())
 
 	// run
 	port := os.Getenv("HTTP_PORT")

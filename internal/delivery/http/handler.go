@@ -2,11 +2,11 @@
 package http
 
 import (
-	"net/http"
-
 	"github.com/kekasicoid/go-api-tools/internal/usecase"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kekasicoid/go-api-tools/pkg/logger"
+	"go.uber.org/zap"
 )
 
 type Handler struct {
@@ -25,15 +25,25 @@ func (h *Handler) FormatJSON(c *gin.Context) {
 	var req formatRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		logger.Log.Error("invalid request",
+			zap.Error(err),
+		)
+
+		c.JSON(400, gin.H{"error": "invalid request"})
 		return
 	}
 
 	result, err := h.usecase.FormatJSON(req.Data)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		logger.Log.Error("format failed",
+			zap.Error(err),
+		)
+
+		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"formatted": result})
+	logger.Log.Info("json formatted successfully")
+
+	c.JSON(200, gin.H{"formatted": result})
 }
