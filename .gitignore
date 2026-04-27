@@ -1,0 +1,13 @@
+# binary
+app
+*.exe
+
+# Go
+vendor/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+#enviroment
