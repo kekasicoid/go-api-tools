@@ -3,6 +3,7 @@ package middleware
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -18,8 +19,9 @@ var (
 )
 
 func initRedis() {
+	addr := os.Getenv("REDIS_ADDR")
 	rdb = redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_ADDR"),
+		Addr:     addr,
 		Password: os.Getenv("REDIS_PASSWORD"), // no password set
 		DB: func() int {
 			db, err := strconv.Atoi(os.Getenv("REDIS_DB"))
@@ -29,6 +31,14 @@ func initRedis() {
 			return db
 		}(),
 	})
+
+	// Test connection
+	_, err := rdb.Ping(ctx).Result()
+	if err != nil {
+		log.Printf("Failed to connect to Redis at %s: %v", addr, err)
+	} else {
+		log.Printf("Successfully connected to Redis at %s", addr)
+	}
 }
 
 func RateLimit() gin.HandlerFunc {
