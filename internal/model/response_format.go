@@ -14,7 +14,7 @@ func resolveRequestID(c *gin.Context) string {
 		}
 	}
 
-	return c.GetHeader(HeadRequestIDKey)
+	return "invalid " + HeadRequestIDKey
 }
 
 func RespBadRequest(c *gin.Context, desc string) {
