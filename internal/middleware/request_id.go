@@ -8,7 +8,7 @@ import (
 	"github.com/kekasicoid/go-api-tools/internal/model"
 )
 
-var requestIDPattern = regexp.MustCompile(`^[A-Za-z0-9]+$`)
+var requestIDPattern = regexp.MustCompile(`^[A-Za-z0-9]{1,50}$`)
 
 func ValidateRequestID() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -25,14 +25,8 @@ func ValidateRequestID() gin.HandlerFunc {
 			return
 		}
 
-		if len(requestID) > 50 {
-			model.RespBadRequest(c, "request-id max length is 50")
-			c.Abort()
-			return
-		}
-
 		if !requestIDPattern.MatchString(requestID) {
-			model.RespBadRequest(c, "request-id must be alphanumeric")
+			model.RespBadRequest(c, "request-id must be alphanumeric, without spaces, and max length 50")
 			c.Abort()
 			return
 		}
