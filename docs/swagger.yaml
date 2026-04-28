@@ -68,9 +68,10 @@ paths:
       - application/json
       description: Format a raw JSON string into pretty JSON
       parameters:
-      - description: Request ID
+      - description: Request ID (alphanumeric, max 50 chars)
         in: header
         name: request-id
+        required: true
         type: string
       - description: JSON data to format
         in: body

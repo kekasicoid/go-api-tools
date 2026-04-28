@@ -9,10 +9,14 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func NewRouter(h *Handler) *gin.Engine {
-	r := gin.Default()
+func NewRouter() *gin.Engine {
+	return gin.Default()
+}
 
-	r.POST("/tools/json/format", h.FormatJSON)
+func RegisterRoutes(r *gin.Engine, h *Handler) {
+
+	tools := r.Group("/tools")
+	tools.POST("/json/format", h.FormatJSON)
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
@@ -23,6 +27,4 @@ func NewRouter(h *Handler) *gin.Engine {
 	if appEnv == "development" || appEnv == "dev" {
 		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
-
-	return r
 }

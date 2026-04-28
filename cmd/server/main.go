@@ -44,12 +44,16 @@ func main() {
 	handler := httpDelivery.NewHandler(usecase)
 
 	// router
-	r := httpDelivery.NewRouter(handler)
+	r := httpDelivery.NewRouter()
 
 	// middleware
 	r.Use(middleware.CORS())
 	r.Use(middleware.RateLimit())
 	r.Use(middleware.RequestLogger())
+	r.Use(middleware.ValidateRequestID())
+
+	// routes
+	httpDelivery.RegisterRoutes(r, handler)
 
 	// run
 	port := os.Getenv("HTTP_PORT")

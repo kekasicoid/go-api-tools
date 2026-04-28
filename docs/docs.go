@@ -39,9 +39,10 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Request ID",
+                        "description": "Request ID (alphanumeric, max 50 chars)",
                         "name": "request-id",
-                        "in": "header"
+                        "in": "header",
+                        "required": true
                     },
                     {
                         "description": "JSON data to format",
