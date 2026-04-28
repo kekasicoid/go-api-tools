@@ -1,0 +1,95 @@
+basePath: /
+definitions:
+  model.FormatJsonRequest:
+    properties:
+      data:
+        example: '{"name":"kekasi","age":25}'
+        type: string
+    type: object
+  model.FormatJsonResponse:
+    properties:
+      formatted:
+        example: |-
+          {
+            "name": "kekasi",
+            "age": 25
+          }
+        type: string
+    type: object
+  model.FormatJsonResponseSwag:
+    properties:
+      response_code:
+        example: "200"
+        type: string
+      response_data:
+        $ref: '#/definitions/model.FormatJsonResponse'
+      response_desc:
+        example: success
+        type: string
+      response_id:
+        example: abc-123
+        type: string
+      response_refnum:
+        example: ""
+        type: string
+    type: object
+  model.SwaggRespError:
+    properties:
+      response_code:
+        example: "400"
+        type: string
+      response_data: {}
+      response_desc:
+        example: data is required
+        type: string
+      response_id:
+        example: abc-123
+        type: string
+      response_refnum:
+        example: ""
+        type: string
+    type: object
+host: localhost:7070
+info:
+  contact:
+    email: arditya@kekasi.co.id
+    name: Official support
+    url: https://kekasi.co.id/en/contact/
+  description: A collection of API tools in Go.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Go API Tools by Arditya Kekasi
+  version: "1.0"
+paths:
+  /tools/json/format:
+    post:
+      consumes:
+      - application/json
+      description: Format a raw JSON string into pretty JSON
+      parameters:
+      - description: Request ID
+        in: header
+        name: request-id
+        type: string
+      - description: JSON data to format
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.FormatJsonRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.FormatJsonResponseSwag'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.SwaggRespError'
+      summary: Format JSON data
+      tags:
+      - tools
+swagger: "2.0"

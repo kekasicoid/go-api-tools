@@ -1,0 +1,133 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "A collection of API tools in Go.",
+        "title": "Go API Tools by Arditya Kekasi",
+        "contact": {
+            "name": "Official support",
+            "url": "https://kekasi.co.id/en/contact/",
+            "email": "arditya@kekasi.co.id"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:7070",
+    "basePath": "/",
+    "paths": {
+        "/tools/json/format": {
+            "post": {
+                "description": "Format a raw JSON string into pretty JSON",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tools"
+                ],
+                "summary": "Format JSON data",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID",
+                        "name": "request-id",
+                        "in": "header"
+                    },
+                    {
+                        "description": "JSON data to format",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.FormatJsonRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.FormatJsonResponseSwag"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.SwaggRespError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.FormatJsonRequest": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "string",
+                    "example": "{\"name\":\"kekasi\",\"age\":25}"
+                }
+            }
+        },
+        "model.FormatJsonResponse": {
+            "type": "object",
+            "properties": {
+                "formatted": {
+                    "type": "string",
+                    "example": "{\n  \"name\": \"kekasi\",\n  \"age\": 25\n}"
+                }
+            }
+        },
+        "model.FormatJsonResponseSwag": {
+            "type": "object",
+            "properties": {
+                "response_code": {
+                    "type": "string",
+                    "example": "200"
+                },
+                "response_data": {
+                    "$ref": "#/definitions/model.FormatJsonResponse"
+                },
+                "response_desc": {
+                    "type": "string",
+                    "example": "success"
+                },
+                "response_id": {
+                    "type": "string",
+                    "example": "abc-123"
+                },
+                "response_refnum": {
+                    "type": "string",
+                    "example": ""
+                }
+            }
+        },
+        "model.SwaggRespError": {
+            "type": "object",
+            "properties": {
+                "response_code": {
+                    "type": "string",
+                    "example": "400"
+                },
+                "response_data": {},
+                "response_desc": {
+                    "type": "string",
+                    "example": "data is required"
+                },
+                "response_id": {
+                    "type": "string",
+                    "example": "abc-123"
+                },
+                "response_refnum": {
+                    "type": "string",
+                    "example": ""
+                }
+            }
+        }
+    }
+}

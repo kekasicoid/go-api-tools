@@ -5,6 +5,7 @@ import (
 	"github.com/kekasicoid/go-api-tools/internal/usecase"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kekasicoid/go-api-tools/internal/model"
 	"github.com/kekasicoid/go-api-tools/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -17,33 +18,38 @@ func NewHandler(u *usecase.FormatterUsecase) *Handler {
 	return &Handler{usecase: u}
 }
 
-type formatRequest struct {
-	Data string `json:"data"`
-}
-
+// FormatJSON godoc
+// @Summary      Format JSON data
+// @Description  Format a raw JSON string into pretty JSON
+// @Tags         tools
+// @Accept       json
+// @Produce      json
+// @Param        request-id  header    string                 false "Request ID"
+// @Param        request     body      model.FormatJsonRequest  true  "JSON data to format"
+// @Success      200      {object}  model.FormatJsonResponseSwag
+// @Failure      400      {object}  model.SwaggRespError
+// @Router       /tools/json/format [post]
 func (h *Handler) FormatJSON(c *gin.Context) {
-	var req formatRequest
+	requestID := c.GetHeader("request-id")
 
+	var req model.FormatJsonRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		logger.Log.Error("invalid request",
-			zap.Error(err),
-		)
+		logger.Log.Error("invalid request", zap.Error(err))
+		model.RespBadRequest(c, requestID, "invalid request")
+		return
+	}
 
-		c.JSON(400, gin.H{"error": "invalid request"})
+	if req.Data == "" {
+		model.RespBadRequest(c, requestID, "data is required")
 		return
 	}
 
 	result, err := h.usecase.FormatJSON(req.Data)
 	if err != nil {
-		logger.Log.Error("format failed",
-			zap.Error(err),
-		)
-
-		c.JSON(400, gin.H{"error": err.Error()})
+		logger.Log.Error("format failed", zap.Error(err))
+		model.RespBadRequest(c, requestID, err.Error())
 		return
 	}
 
-	logger.Log.Info("json formatted successfully")
-
-	c.JSON(200, gin.H{"formatted": result})
+	model.RespSuccess(c, requestID, "success", model.FormatJsonResponse{Formatted: result})
 }

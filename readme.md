@@ -38,6 +38,31 @@ REDIS_DB=0
    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o server cmd/server/main.go
    ```
 
+## Generate Swagger Docs
+1. Install `swag` CLI:
+   ```bash
+   go install github.com/swaggo/swag/cmd/swag@v1.16.6
+   ```
+2. Generate Swagger files into `docs/`:
+   ```bash
+   swag init -g cmd/server/main.go -o docs
+   ```
+3. If `swag` is not recognized on Windows PowerShell, run this first in the same terminal session:
+   ```powershell
+   $env:Path += ";$(go env GOPATH)\\bin"
+   ```
+
+## Access Swagger UI
+1. Run the application with `APP_ENV=development` or `APP_ENV=dev` so the Swagger route is enabled.
+   ```bash
+   APP_ENV=development go run cmd/server/main.go
+   ```
+2. Open Swagger UI in the browser:
+   ```text
+   http://localhost:8080/swagger/index.html
+   ```
+3. If you use a different port, replace `8080` with the value from `HTTP_PORT`.
+
 ## Docker Deployment
 1. Build and start using Docker Compose:
    ```bash
