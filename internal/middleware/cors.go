@@ -46,6 +46,18 @@ func CORS() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		requestOrigin := strings.TrimRight(strings.TrimSpace(c.GetHeader("Origin")), "/")
 		isCORSRequest := requestOrigin != ""
+		isPreflight := c.Request.Method == "OPTIONS"
+
+		logger.Log.Info(
+			"CORS: incoming request",
+			zap.String("method", c.Request.Method),
+			zap.String("path", c.Request.URL.Path),
+			zap.String("origin", requestOrigin),
+			zap.Bool("isCORSRequest", isCORSRequest),
+			zap.Bool("isPreflight", isPreflight),
+			zap.String("accessControlRequestMethod", c.GetHeader("Access-Control-Request-Method")),
+			zap.String("accessControlRequestHeaders", c.GetHeader("Access-Control-Request-Headers")),
+		)
 
 		if isCORSRequest && allowAllOrigins {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -65,7 +77,7 @@ func CORS() gin.HandlerFunc {
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, request-id")
 
-		if c.Request.Method == "OPTIONS" {
+		if isPreflight {
 			c.AbortWithStatus(204)
 			return
 		}
