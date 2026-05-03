@@ -9,7 +9,8 @@ import (
 )
 
 func CORS() gin.HandlerFunc {
-	corsOrigin := os.Getenv("CORS_ORIGIN")
+	corsOrigin := strings.TrimSpace(os.Getenv("CORS_ORIGIN"))
+	corsOrigin = strings.Trim(corsOrigin, "\"'")
 	allowAllOrigins := false
 	allowedOrigins := map[string]struct{}{}
 
@@ -18,18 +19,24 @@ func CORS() gin.HandlerFunc {
 	} else {
 		for _, origin := range strings.Split(corsOrigin, ",") {
 			trimmed := strings.TrimSpace(origin)
+			trimmed = strings.Trim(trimmed, "\"'")
+			trimmed = strings.TrimRight(trimmed, "/")
+			if trimmed == "*" {
+				allowAllOrigins = true
+				break
+			}
 			if trimmed != "" {
 				allowedOrigins[trimmed] = struct{}{}
 			}
 		}
 
-		if len(allowedOrigins) == 0 {
+		if !allowAllOrigins && len(allowedOrigins) == 0 {
 			allowAllOrigins = true
 		}
 	}
 
 	return func(c *gin.Context) {
-		requestOrigin := c.GetHeader("Origin")
+		requestOrigin := strings.TrimRight(strings.TrimSpace(c.GetHeader("Origin")), "/")
 
 		if allowAllOrigins {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
