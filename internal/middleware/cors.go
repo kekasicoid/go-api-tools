@@ -45,18 +45,21 @@ func CORS() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		requestOrigin := strings.TrimRight(strings.TrimSpace(c.GetHeader("Origin")), "/")
+		isCORSRequest := requestOrigin != ""
 
-		if allowAllOrigins {
+		if isCORSRequest && allowAllOrigins {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		} else if _, ok := allowedOrigins[requestOrigin]; ok {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", requestOrigin)
-			c.Writer.Header().Set("Vary", "Origin")
-		} else {
-			logger.Log.Info(
-				"CORS: request origin rejected",
-				zap.String("requestOrigin", requestOrigin),
-				zap.Any("allowedOrigins", allowedOrigins),
-			)
+		} else if isCORSRequest {
+			if _, ok := allowedOrigins[requestOrigin]; ok {
+				c.Writer.Header().Set("Access-Control-Allow-Origin", requestOrigin)
+				c.Writer.Header().Set("Vary", "Origin")
+			} else {
+				logger.Log.Info(
+					"CORS: request origin rejected",
+					zap.String("requestOrigin", requestOrigin),
+					zap.Any("allowedOrigins", allowedOrigins),
+				)
+			}
 		}
 
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
