@@ -14,6 +14,7 @@ services:
       - REDIS_DB=${REDIS_DB}
       - APP_ENV=${APP_ENV}
       - SWAGGER_HOST=${SWAGGER_HOST}
+      - REQUEST_ID_TTL_HOURS=${REQUEST_ID_TTL_HOURS}
     depends_on:
       - redis
 
