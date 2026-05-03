@@ -2,10 +2,13 @@
 package main
 
 import (
+	"context"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 	docs "github.com/kekasicoid/go-api-tools/docs"
 	httpDelivery "github.com/kekasicoid/go-api-tools/internal/delivery/http"
@@ -13,6 +16,7 @@ import (
 	"github.com/kekasicoid/go-api-tools/internal/usecase"
 	"github.com/kekasicoid/go-api-tools/pkg/jsonutil"
 	"github.com/kekasicoid/go-api-tools/pkg/logger"
+	"go.uber.org/zap"
 )
 
 // @title           Go API Tools by Arditya Kekasi
@@ -41,7 +45,11 @@ func main() {
 
 	// init dependency
 	formatter := jsonutil.NewJSONFormatter()
-	usecase := usecase.NewFormatterUsecase(formatter)
+	rdb := initRedisClient()
+	if rdb != nil {
+		defer rdb.Close()
+	}
+	usecase := usecase.NewFormatterUsecase(formatter, rdb)
 	handler := httpDelivery.NewHandler(usecase)
 
 	// router
@@ -88,4 +96,36 @@ func main() {
 
 	r.Run(":" + port)
 
+}
+
+func initRedisClient() *redis.Client {
+	addr := strings.TrimSpace(os.Getenv("REDIS_ADDR"))
+	if addr == "" {
+		logger.Log.Warn("REDIS_ADDR not set, redis cache disabled")
+		return nil
+	}
+
+	db := 0
+	if rawDB := strings.TrimSpace(os.Getenv("REDIS_DB")); rawDB != "" {
+		parsedDB, err := strconv.Atoi(rawDB)
+		if err != nil {
+			logger.Log.Warn("invalid REDIS_DB, using default 0", zap.Error(err), zap.String("redis_db", rawDB))
+		} else {
+			db = parsedDB
+		}
+	}
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       db,
+	})
+
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
+		logger.Log.Warn("redis ping failed, cache disabled", zap.Error(err))
+		return nil
+	}
+
+	logger.Log.Info("redis connected for cache")
+	return rdb
 }
