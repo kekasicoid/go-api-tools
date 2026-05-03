@@ -2,16 +2,17 @@
 package main
 
 import (
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
+	docs "github.com/kekasicoid/go-api-tools/docs"
 	httpDelivery "github.com/kekasicoid/go-api-tools/internal/delivery/http"
 	"github.com/kekasicoid/go-api-tools/internal/middleware"
 	"github.com/kekasicoid/go-api-tools/internal/usecase"
 	"github.com/kekasicoid/go-api-tools/pkg/jsonutil"
 	"github.com/kekasicoid/go-api-tools/pkg/logger"
-
-	_ "github.com/kekasicoid/go-api-tools/docs"
 )
 
 // @title           Go API Tools by Arditya Kekasi
@@ -60,6 +61,30 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+
+	// Allow Swagger host to be configured dynamically at runtime.
+	swaggerHost := strings.TrimSpace(os.Getenv("SWAGGER_HOST"))
+	if swaggerHost == "" {
+		swaggerHost = "localhost:" + port
+	}
+
+	if strings.Contains(swaggerHost, "://") {
+		if parsedURL, err := url.Parse(swaggerHost); err == nil {
+			if parsedURL.Host != "" {
+				docs.SwaggerInfo.Host = parsedURL.Host
+			} else {
+				docs.SwaggerInfo.Host = swaggerHost
+			}
+			if parsedURL.Scheme != "" {
+				docs.SwaggerInfo.Schemes = []string{parsedURL.Scheme}
+			}
+		} else {
+			docs.SwaggerInfo.Host = swaggerHost
+		}
+	} else {
+		docs.SwaggerInfo.Host = swaggerHost
+	}
+	docs.SwaggerInfo.BasePath = "/"
 
 	r.Run(":" + port)
 
