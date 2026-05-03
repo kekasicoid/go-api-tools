@@ -78,6 +78,11 @@ func CORS() gin.HandlerFunc {
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, request-id")
 
 		if isPreflight {
+			logger.Log.Info(
+				"CORS: preflight handled, skipping downstream middleware",
+				zap.String("path", c.Request.URL.Path),
+				zap.String("origin", requestOrigin),
+			)
 			c.AbortWithStatus(204)
 			return
 		}
