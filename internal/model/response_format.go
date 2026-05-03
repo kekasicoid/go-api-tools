@@ -33,3 +33,11 @@ func RespSuccess(c *gin.Context, desc string, data interface{}) {
 	resp.Data = data
 	c.JSON(httpCode, resp)
 }
+
+func RespInternalServerError(c *gin.Context, desc string) {
+	httpCode := 500
+	resp := response.New(resolveRequestID(c))
+	resp.Code = fmt.Sprintf("%d", httpCode)
+	resp.Desc = desc
+	c.JSON(httpCode, resp)
+}
