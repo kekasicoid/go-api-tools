@@ -50,7 +50,7 @@ func main() {
 	// middleware
 	r.Use(middleware.CORS())
 	r.Use(middleware.RateLimit())
-	r.Use(middleware.RequestLogger())
+	// r.Use(middleware.RequestLogger())
 	r.Use(middleware.ValidateRequestID())
 
 	// routes
