@@ -13,8 +13,9 @@ import (
 	docs "github.com/kekasicoid/go-api-tools/docs"
 	httpDelivery "github.com/kekasicoid/go-api-tools/internal/delivery/http"
 	"github.com/kekasicoid/go-api-tools/internal/middleware"
-	"github.com/kekasicoid/go-api-tools/internal/usecase"
+	appusecase "github.com/kekasicoid/go-api-tools/internal/usecase"
 	"github.com/kekasicoid/go-api-tools/pkg/jsonutil"
+	"github.com/kekasicoid/go-api-tools/pkg/jwtutil"
 	"github.com/kekasicoid/go-api-tools/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -49,8 +50,12 @@ func main() {
 	if rdb != nil {
 		defer rdb.Close()
 	}
-	usecase := usecase.NewFormatterUsecase(formatter, rdb)
-	handler := httpDelivery.NewHandler(usecase)
+	formatterUsecase := appusecase.NewFormatterUsecase(formatter, rdb)
+	handler := httpDelivery.NewHandler(formatterUsecase)
+
+	jwtDecoder := jwtutil.NewJWTDecoder()
+	jwtUsecase := appusecase.NewJWTUsecase(jwtDecoder)
+	jwtHandler := httpDelivery.NewJWTHandler(jwtUsecase)
 
 	// router
 	r := httpDelivery.NewRouter()
@@ -62,7 +67,7 @@ func main() {
 	// r.Use(middleware.RequestLogger())
 
 	// routes
-	httpDelivery.RegisterRoutes(r, handler)
+	httpDelivery.RegisterRoutes(r, handler, jwtHandler)
 
 	// run
 	port := os.Getenv("HTTP_PORT")
