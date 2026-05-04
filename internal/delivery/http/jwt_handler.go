@@ -88,11 +88,11 @@ func (h *JWTHandler) ValidateJWT(c *gin.Context) {
 	claims, err := h.usecase.ValidateJWT(req.Token, req.Secret)
 	if err != nil {
 		logger.Log.Warn("jwt validation failed", zap.Error(err))
-		model.RespSuccess(c, "success", model.JWTValidateResponse{Valid: false})
+		model.RespSuccess(c, "token is not valid", model.JWTValidateResponse{Valid: false})
 		return
 	}
 
-	model.RespSuccess(c, "success", model.JWTValidateResponse{
+	model.RespSuccess(c, "token is valid", model.JWTValidateResponse{
 		Valid:  true,
 		Claims: claims,
 	})

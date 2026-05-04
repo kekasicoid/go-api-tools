@@ -28,9 +28,11 @@ func (d *JWTDecoder) Decode(token string) (map[string]interface{}, map[string]in
 		return nil, nil, errors.New("invalid JWT format: must have 3 parts")
 	}
 
-	// Parse without verifying signature.
+	// ParseUnverified is intentionally used here: the Decode function is designed
+	// to inspect a JWT's header and claims without verifying the signature.
+	// Signature verification is handled separately by the Validate function.
 	p := jwt.NewParser()
-	parsed, _, err := p.ParseUnverified(token, jwt.MapClaims{})
+	parsed, _, err := p.ParseUnverified(token, jwt.MapClaims{}) //nolint:all
 	if err != nil {
 		return nil, nil, errors.New("failed to parse token: " + err.Error())
 	}
@@ -61,7 +63,10 @@ func (d *JWTDecoder) Validate(token string, secret string) (map[string]interface
 
 	parsed, err := jwt.ParseWithClaims(token, jwt.MapClaims{}, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			alg, _ := t.Header["alg"].(string)
+			alg, ok := t.Header["alg"].(string)
+			if !ok {
+				return nil, errors.New("unexpected signing method: unknown algorithm")
+			}
 			return nil, errors.New("unexpected signing method: " + alg)
 		}
 		return []byte(secret), nil
