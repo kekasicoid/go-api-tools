@@ -4,6 +4,7 @@ Simple tools API built with Go (Gin) using clean architecture.
 
 ## Features
 - JSON Formatter API
+- [JWT Decode & Validate](docs/jwt.md)
 - Clean Architecture
 - Rate Limiting
 - CORS ready
