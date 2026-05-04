@@ -4,13 +4,13 @@ package middleware
 import (
 	"context"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"github.com/kekasicoid/go-api-tools/internal/model"
 )
 
 var (
@@ -53,13 +53,10 @@ func RateLimit() gin.HandlerFunc {
 		// Increment the request count for the IP
 		count, err := rdb.Incr(ctx, key).Result()
 		if err != nil {
-			log.Printf("RateLimit Redis error for IP %s: %v", ip, err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			model.RespInternalServerError(c, "internal server error")
 			c.Abort()
 			return
 		}
-
-		log.Printf("Request count for IP %s: %d", ip, count)
 
 		// Set expiration for the key if it's new
 		if count == 1 {
@@ -67,7 +64,7 @@ func RateLimit() gin.HandlerFunc {
 		}
 
 		if count > 100 {
-			c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many requests"})
+			model.RespTooManyRequests(c, "too many requests")
 			c.Abort()
 			return
 		}
