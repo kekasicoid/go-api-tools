@@ -1,6 +1,6 @@
 # JWT Tools
 
-Kumpulan tools untuk **decode** dan **validasi** JWT token berbasis HMAC.
+Tool untuk **decode** dan **validasi** JWT token berbasis HMAC dalam satu endpoint.
 
 ---
 
@@ -8,81 +8,18 @@ Kumpulan tools untuk **decode** dan **validasi** JWT token berbasis HMAC.
 
 | Method | Path | Deskripsi |
 |--------|------|-----------|
-| `POST` | `/tools/jwt/decode` | Parse header & claims tanpa verifikasi signature |
-| `POST` | `/tools/jwt/validate` | Verifikasi signature HMAC + kembalikan claims |
+| `POST` | `/tools/jwt/decode-validation` | Parse header & claims, dan opsional verifikasi signature HMAC |
 
 > Semua request wajib menyertakan header `request-id` (alphanumeric, maks 50 karakter).
 
 ---
 
-## POST /tools/jwt/decode
+## POST /tools/jwt/decode-validation
 
-Memecah JWT menjadi bagian **header** dan **claims** tanpa memverifikasi signature.  
-Berguna untuk inspeksi isi token secara cepat.
+Memecah JWT menjadi bagian **header** dan **claims**.  
+Jika `secret` disertakan, signature HMAC (HS256 / HS384 / HS512) juga diverifikasi dan hasilnya tercermin di field `valid`.
 
-### Request
-
-**Header**
-
-| Key | Tipe | Wajib | Keterangan |
-|-----|------|-------|------------|
-| `request-id` | string | ✅ | ID unik request |
-
-**Body** (`application/json`)
-
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-}
-```
-
-| Field | Tipe | Wajib | Keterangan |
-|-------|------|-------|------------|
-| `token` | string | ✅ | JWT token yang akan di-decode |
-
-### Response
-
-**200 OK**
-
-```json
-{
-  "response_code": "200",
-  "response_refnum": "",
-  "response_id": "abc-123",
-  "response_desc": "success",
-  "response_data": {
-    "header": {
-      "alg": "HS256",
-      "typ": "JWT"
-    },
-    "claims": {
-      "sub": "1234567890",
-      "name": "John Doe",
-      "iat": 1516239022
-    }
-  }
-}
-```
-
-**400 Bad Request** — token kosong atau format JWT tidak valid
-
-```json
-{
-  "response_code": "400",
-  "response_refnum": "",
-  "response_id": "abc-123",
-  "response_desc": "token is required"
-}
-```
-
----
-
-## POST /tools/jwt/validate
-
-Memverifikasi **signature HMAC** (HS256 / HS384 / HS512) JWT menggunakan secret yang disediakan.  
-Mengembalikan claims jika token valid.
-
-> ⚠️ Hanya mendukung algoritma HMAC. Token dengan algoritma RSA/ECDSA akan ditolak.
+> ⚠️ Verifikasi signature hanya mendukung algoritma HMAC. Token dengan algoritma RSA/ECDSA akan ditolak saat validasi.
 
 ### Request
 
@@ -103,64 +40,67 @@ Mengembalikan claims jika token valid.
 
 | Field | Tipe | Wajib | Keterangan |
 |-------|------|-------|------------|
-| `token` | string | ✅ | JWT token yang akan divalidasi |
-| `secret` | string | ✅ | HMAC secret key |
+| `token` | string | ✅ | JWT token yang akan di-decode |
+| `secret` | string | ❌ | HMAC secret key untuk verifikasi signature. Jika tidak diisi, `valid` selalu `false` |
 
 ### Response
 
-**200 OK — Token valid**
+**200 OK — Decode berhasil, signature valid**
 
 ```json
 {
   "response_code": "200",
   "response_refnum": "",
   "response_id": "abc-123",
-  "response_desc": "token is valid",
+  "response_desc": "success",
   "response_data": {
-    "valid": true,
+    "header": {
+      "alg": "HS256",
+      "typ": "JWT"
+    },
     "claims": {
       "sub": "1234567890",
       "name": "John Doe",
       "iat": 1516239022
-    }
+    },
+    "valid": true
   }
 }
 ```
 
-**200 OK — Token tidak valid / signature salah**
+**200 OK — Decode berhasil, signature tidak valid atau secret tidak diisi**
 
 ```json
 {
   "response_code": "200",
   "response_refnum": "",
   "response_id": "abc-123",
-  "response_desc": "token is not valid",
+  "response_desc": "success",
   "response_data": {
+    "header": {
+      "alg": "HS256",
+      "typ": "JWT"
+    },
+    "claims": {
+      "sub": "1234567890",
+      "name": "John Doe",
+      "iat": 1516239022
+    },
     "valid": false
   }
 }
 ```
 
-**400 Bad Request** — token atau secret kosong
+**400 Bad Request** — token kosong atau format JWT tidak valid
 
 ```json
 {
   "response_code": "400",
   "response_refnum": "",
   "response_id": "abc-123",
-  "response_desc": "secret is required"
+  "response_desc": "token is required"
 }
 ```
-
----
-
-## Perbedaan Decode vs Validate
-
-| Aspek | `/jwt/decode` | `/jwt/validate` |
-|-------|---------------|-----------------|
-| Verifikasi signature | ❌ Tidak | ✅ Ya |
-| Perlu secret | ❌ Tidak | ✅ Ya |
-| Cocok untuk | Inspeksi isi token | Autentikasi token |
 
 ---
 
