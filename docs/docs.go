@@ -69,6 +69,100 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/tools/jwt/decode": {
+            "post": {
+                "description": "Parse a JWT token and return its header and claims without verifying the signature",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tools"
+                ],
+                "summary": "Decode JWT token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID (alphanumeric, max 50 chars)",
+                        "name": "request-id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "JWT token to decode",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.JWTDecodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.JWTDecodeResponseSwag"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.SwaggRespError"
+                        }
+                    }
+                }
+            }
+        },
+        "/tools/jwt/validate": {
+            "post": {
+                "description": "Verify a JWT token signature using the provided HMAC secret and return its claims",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tools"
+                ],
+                "summary": "Validate JWT token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID (alphanumeric, max 50 chars)",
+                        "name": "request-id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "JWT token and HMAC secret",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.JWTValidateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.JWTValidateResponseSwag"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.SwaggRespError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -99,6 +193,101 @@ const docTemplate = `{
                 },
                 "response_data": {
                     "$ref": "#/definitions/model.FormatJsonResponse"
+                },
+                "response_desc": {
+                    "type": "string",
+                    "example": "success"
+                },
+                "response_id": {
+                    "type": "string",
+                    "example": "abc-123"
+                },
+                "response_refnum": {
+                    "type": "string",
+                    "example": ""
+                }
+            }
+        },
+        "model.JWTDecodeRequest": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+                }
+            }
+        },
+        "model.JWTDecodeResponse": {
+            "type": "object",
+            "properties": {
+                "claims": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "header": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            }
+        },
+        "model.JWTDecodeResponseSwag": {
+            "type": "object",
+            "properties": {
+                "response_code": {
+                    "type": "string",
+                    "example": "200"
+                },
+                "response_data": {
+                    "$ref": "#/definitions/model.JWTDecodeResponse"
+                },
+                "response_desc": {
+                    "type": "string",
+                    "example": "success"
+                },
+                "response_id": {
+                    "type": "string",
+                    "example": "abc-123"
+                },
+                "response_refnum": {
+                    "type": "string",
+                    "example": ""
+                }
+            }
+        },
+        "model.JWTValidateRequest": {
+            "type": "object",
+            "properties": {
+                "secret": {
+                    "type": "string",
+                    "example": "my-secret-key"
+                },
+                "token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+                }
+            }
+        },
+        "model.JWTValidateResponse": {
+            "type": "object",
+            "properties": {
+                "claims": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "valid": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "model.JWTValidateResponseSwag": {
+            "type": "object",
+            "properties": {
+                "response_code": {
+                    "type": "string",
+                    "example": "200"
+                },
+                "response_data": {
+                    "$ref": "#/definitions/model.JWTValidateResponse"
                 },
                 "response_desc": {
                     "type": "string",
