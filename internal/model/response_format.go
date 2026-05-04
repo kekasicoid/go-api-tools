@@ -17,6 +17,14 @@ func resolveRequestID(c *gin.Context) string {
 	return "invalid " + HeadRequestIDKey
 }
 
+func RespTooManyRequests(c *gin.Context, desc string) {
+	httpCode := 429
+	resp := response.New(resolveRequestID(c))
+	resp.Code = fmt.Sprintf("%d", httpCode)
+	resp.Desc = desc
+	c.JSON(httpCode, resp)
+}
+
 func RespBadRequest(c *gin.Context, desc string) {
 	httpCode := 400
 	resp := response.New(resolveRequestID(c))
