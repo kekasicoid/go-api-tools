@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -47,8 +48,7 @@ func RateLimit() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		ip := c.ClientIP()
-		key := "ratelimit:" + ip
+		key := BuildRateLimitKey(c)
 
 		// Increment the request count for the IP
 		count, err := rdb.Incr(ctx, key).Result()
@@ -72,4 +72,29 @@ func RateLimit() gin.HandlerFunc {
 		c.Next()
 
 	}
+}
+
+func BuildRateLimitKey(c *gin.Context) string {
+	ip := c.ClientIP()
+	host := strings.TrimSpace(c.Request.Host)
+	method := strings.TrimSpace(c.Request.Method)
+	path := strings.TrimSpace(c.Request.URL.Path)
+
+	if path == "" {
+		path = c.FullPath()
+	}
+
+	if host == "" {
+		host = "unknown-host"
+	}
+
+	if method == "" {
+		method = "UNKNOWN"
+	}
+
+	if path == "" {
+		path = "/"
+	}
+
+	return "ratelimit:" + ip + ":" + host + ":" + method + ":" + path
 }
