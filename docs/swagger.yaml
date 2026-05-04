@@ -33,39 +33,7 @@ definitions:
         example: ""
         type: string
     type: object
-  model.JWTDecodeRequest:
-    properties:
-      token:
-        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U
-        type: string
-    type: object
-  model.JWTDecodeResponse:
-    properties:
-      claims:
-        additionalProperties: true
-        type: object
-      header:
-        additionalProperties: true
-        type: object
-    type: object
-  model.JWTDecodeResponseSwag:
-    properties:
-      response_code:
-        example: "200"
-        type: string
-      response_data:
-        $ref: '#/definitions/model.JWTDecodeResponse'
-      response_desc:
-        example: success
-        type: string
-      response_id:
-        example: abc-123
-        type: string
-      response_refnum:
-        example: ""
-        type: string
-    type: object
-  model.JWTValidateRequest:
+  model.JWTDecodeValidationRequest:
     properties:
       secret:
         example: my-secret-key
@@ -74,21 +42,24 @@ definitions:
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U
         type: string
     type: object
-  model.JWTValidateResponse:
+  model.JWTDecodeValidationResponse:
     properties:
       claims:
+        additionalProperties: true
+        type: object
+      header:
         additionalProperties: true
         type: object
       valid:
         type: boolean
     type: object
-  model.JWTValidateResponseSwag:
+  model.JWTDecodeValidationResponseSwag:
     properties:
       response_code:
         example: "200"
         type: string
       response_data:
-        $ref: '#/definitions/model.JWTValidateResponse'
+        $ref: '#/definitions/model.JWTDecodeValidationResponse'
       response_desc:
         example: success
         type: string
@@ -159,68 +130,37 @@ paths:
       summary: Format JSON data
       tags:
       - tools
-  /tools/jwt/decode:
+  /tools/jwt/decode-validation:
     post:
       consumes:
       - application/json
-      description: Parse a JWT token and return its header and claims without verifying
-        the signature
+      description: Parse a JWT token and return its header and claims. When a secret
+        is provided the signature is also verified and the valid field reflects the
+        result.
       parameters:
       - description: Request ID (alphanumeric, max 50 chars)
         in: header
         name: request-id
         required: true
         type: string
-      - description: JWT token to decode
+      - description: JWT token and optional HMAC secret
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/model.JWTDecodeRequest'
+          $ref: '#/definitions/model.JWTDecodeValidationRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.JWTDecodeResponseSwag'
+            $ref: '#/definitions/model.JWTDecodeValidationResponseSwag'
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/model.SwaggRespError'
-      summary: Decode JWT token
-      tags:
-      - tools
-  /tools/jwt/validate:
-    post:
-      consumes:
-      - application/json
-      description: Verify a JWT token signature using the provided HMAC secret and
-        return its claims
-      parameters:
-      - description: Request ID (alphanumeric, max 50 chars)
-        in: header
-        name: request-id
-        required: true
-        type: string
-      - description: JWT token and HMAC secret
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/model.JWTValidateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.JWTValidateResponseSwag'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/model.SwaggRespError'
-      summary: Validate JWT token
+      summary: Decode and validate JWT token
       tags:
       - tools
 swagger: "2.0"

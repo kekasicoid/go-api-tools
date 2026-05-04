@@ -70,9 +70,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/tools/jwt/decode": {
+        "/tools/jwt/decode-validation": {
             "post": {
-                "description": "Parse a JWT token and return its header and claims without verifying the signature",
+                "description": "Parse a JWT token and return its header and claims. When a secret is provided the signature is also verified and the valid field reflects the result.",
                 "consumes": [
                     "application/json"
                 ],
@@ -82,7 +82,7 @@ const docTemplate = `{
                 "tags": [
                     "tools"
                 ],
-                "summary": "Decode JWT token",
+                "summary": "Decode and validate JWT token",
                 "parameters": [
                     {
                         "type": "string",
@@ -92,12 +92,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "JWT token to decode",
+                        "description": "JWT token and optional HMAC secret",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.JWTDecodeRequest"
+                            "$ref": "#/definitions/model.JWTDecodeValidationRequest"
                         }
                     }
                 ],
@@ -105,54 +105,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.JWTDecodeResponseSwag"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/model.SwaggRespError"
-                        }
-                    }
-                }
-            }
-        },
-        "/tools/jwt/validate": {
-            "post": {
-                "description": "Verify a JWT token signature using the provided HMAC secret and return its claims",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tools"
-                ],
-                "summary": "Validate JWT token",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Request ID (alphanumeric, max 50 chars)",
-                        "name": "request-id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "JWT token and HMAC secret",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.JWTValidateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.JWTValidateResponseSwag"
+                            "$ref": "#/definitions/model.JWTDecodeValidationResponseSwag"
                         }
                     },
                     "400": {
@@ -208,53 +161,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.JWTDecodeRequest": {
-            "type": "object",
-            "properties": {
-                "token": {
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
-                }
-            }
-        },
-        "model.JWTDecodeResponse": {
-            "type": "object",
-            "properties": {
-                "claims": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "header": {
-                    "type": "object",
-                    "additionalProperties": true
-                }
-            }
-        },
-        "model.JWTDecodeResponseSwag": {
-            "type": "object",
-            "properties": {
-                "response_code": {
-                    "type": "string",
-                    "example": "200"
-                },
-                "response_data": {
-                    "$ref": "#/definitions/model.JWTDecodeResponse"
-                },
-                "response_desc": {
-                    "type": "string",
-                    "example": "success"
-                },
-                "response_id": {
-                    "type": "string",
-                    "example": "abc-123"
-                },
-                "response_refnum": {
-                    "type": "string",
-                    "example": ""
-                }
-            }
-        },
-        "model.JWTValidateRequest": {
+        "model.JWTDecodeValidationRequest": {
             "type": "object",
             "properties": {
                 "secret": {
@@ -267,10 +174,14 @@ const docTemplate = `{
                 }
             }
         },
-        "model.JWTValidateResponse": {
+        "model.JWTDecodeValidationResponse": {
             "type": "object",
             "properties": {
                 "claims": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "header": {
                     "type": "object",
                     "additionalProperties": true
                 },
@@ -279,7 +190,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.JWTValidateResponseSwag": {
+        "model.JWTDecodeValidationResponseSwag": {
             "type": "object",
             "properties": {
                 "response_code": {
@@ -287,7 +198,7 @@ const docTemplate = `{
                     "example": "200"
                 },
                 "response_data": {
-                    "$ref": "#/definitions/model.JWTValidateResponse"
+                    "$ref": "#/definitions/model.JWTDecodeValidationResponse"
                 },
                 "response_desc": {
                     "type": "string",

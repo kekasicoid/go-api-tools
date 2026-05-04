@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// JWTHandler handles JWT decode and validation requests.
+// JWTHandler handles JWT decode-validation requests.
 type JWTHandler struct {
 	usecase *usecase.JWTUsecase
 }
@@ -19,19 +19,19 @@ func NewJWTHandler(u *usecase.JWTUsecase) *JWTHandler {
 	return &JWTHandler{usecase: u}
 }
 
-// DecodeJWT godoc
-// @Summary      Decode JWT token
-// @Description  Parse a JWT token and return its header and claims without verifying the signature
+// DecodeValidateJWT godoc
+// @Summary      Decode and validate JWT token
+// @Description  Parse a JWT token and return its header and claims. When a secret is provided the signature is also verified and the valid field reflects the result.
 // @Tags         tools
 // @Accept       json
 // @Produce      json
-// @Param        request-id  header    string                    true  "Request ID (alphanumeric, max 50 chars)"
-// @Param        request     body      model.JWTDecodeRequest    true  "JWT token to decode"
-// @Success      200         {object}  model.JWTDecodeResponseSwag
+// @Param        request-id  header    string                               true  "Request ID (alphanumeric, max 50 chars)"
+// @Param        request     body      model.JWTDecodeValidationRequest     true  "JWT token and optional HMAC secret"
+// @Success      200         {object}  model.JWTDecodeValidationResponseSwag
 // @Failure      400         {object}  model.SwaggRespError
-// @Router       /tools/jwt/decode [post]
-func (h *JWTHandler) DecodeJWT(c *gin.Context) {
-	var req model.JWTDecodeRequest
+// @Router       /tools/jwt/decode-validation [post]
+func (h *JWTHandler) DecodeValidateJWT(c *gin.Context) {
+	var req model.JWTDecodeValidationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Log.Error("invalid request", zap.Error(err))
 		model.RespBadRequest(c, "invalid request")
@@ -50,50 +50,19 @@ func (h *JWTHandler) DecodeJWT(c *gin.Context) {
 		return
 	}
 
-	model.RespSuccess(c, "success", model.JWTDecodeResponse{
+	resp := model.JWTDecodeValidationResponse{
 		Header: header,
 		Claims: claims,
-	})
-}
-
-// ValidateJWT godoc
-// @Summary      Validate JWT token
-// @Description  Verify a JWT token signature using the provided HMAC secret and return its claims
-// @Tags         tools
-// @Accept       json
-// @Produce      json
-// @Param        request-id  header    string                      true  "Request ID (alphanumeric, max 50 chars)"
-// @Param        request     body      model.JWTValidateRequest    true  "JWT token and HMAC secret"
-// @Success      200         {object}  model.JWTValidateResponseSwag
-// @Failure      400         {object}  model.SwaggRespError
-// @Router       /tools/jwt/validate [post]
-func (h *JWTHandler) ValidateJWT(c *gin.Context) {
-	var req model.JWTValidateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		logger.Log.Error("invalid request", zap.Error(err))
-		model.RespBadRequest(c, "invalid request")
-		return
+		Valid:  false,
 	}
 
-	if req.Token == "" {
-		model.RespBadRequest(c, "token is required")
-		return
+	if req.Secret != "" {
+		_, validationErr := h.usecase.ValidateJWT(req.Token, req.Secret)
+		resp.Valid = validationErr == nil
+		if validationErr != nil {
+			logger.Log.Warn("jwt validation failed", zap.Error(validationErr))
+		}
 	}
 
-	if req.Secret == "" {
-		model.RespBadRequest(c, "secret is required")
-		return
-	}
-
-	claims, err := h.usecase.ValidateJWT(req.Token, req.Secret)
-	if err != nil {
-		logger.Log.Warn("jwt validation failed", zap.Error(err))
-		model.RespSuccess(c, "token is not valid", model.JWTValidateResponse{Valid: false})
-		return
-	}
-
-	model.RespSuccess(c, "token is valid", model.JWTValidateResponse{
-		Valid:  true,
-		Claims: claims,
-	})
+	model.RespSuccess(c, "success", resp)
 }
