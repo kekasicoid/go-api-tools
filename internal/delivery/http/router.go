@@ -17,8 +17,7 @@ func RegisterRoutes(r *gin.Engine, h *Handler, jwtH *JWTHandler) {
 
 	tools := r.Group("/tools")
 	tools.POST("/json/format", h.FormatJSON)
-	tools.POST("/jwt/decode", jwtH.DecodeJWT)
-	tools.POST("/jwt/validate", jwtH.ValidateJWT)
+	tools.POST("/jwt/decode-validation", jwtH.DecodeValidateJWT)
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
