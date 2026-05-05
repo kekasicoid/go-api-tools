@@ -33,6 +33,51 @@ definitions:
         example: ""
         type: string
     type: object
+  model.InstagramDownloadRequest:
+    properties:
+      url:
+        example: https://www.instagram.com/arditya.kekasi/p/C2uaPTYShvn/
+        type: string
+    type: object
+  model.InstagramDownloadResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/model.InstagramMediaItem'
+        type: array
+      post_type:
+        example: reel
+        type: string
+    type: object
+  model.InstagramDownloadResponseSwag:
+    properties:
+      response_code:
+        example: "200"
+        type: string
+      response_data:
+        $ref: '#/definitions/model.InstagramDownloadResponse'
+      response_desc:
+        example: success
+        type: string
+      response_id:
+        example: abc-123
+        type: string
+      response_refnum:
+        example: ""
+        type: string
+    type: object
+  model.InstagramMediaItem:
+    properties:
+      media_type:
+        example: photo
+        type: string
+      media_url:
+        example: https://scontent.cdninstagram.com/...
+        type: string
+      thumb_url:
+        example: https://scontent.cdninstagram.com/...
+        type: string
+    type: object
   model.JWTDecodeValidationRequest:
     properties:
       secret:
@@ -99,6 +144,43 @@ info:
   title: Go API Tools by Arditya Kekasi
   version: "1.0"
 paths:
+  /tools/instagram/download:
+    post:
+      consumes:
+      - application/json
+      description: Extract direct download URLs for photos, videos, and reels from
+        a public Instagram post URL. Stories are only supported when the account is
+        public.
+      parameters:
+      - description: Request ID (alphanumeric, max 50 chars)
+        in: header
+        name: request-id
+        required: true
+        type: string
+      - description: Instagram post URL
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.InstagramDownloadRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.InstagramDownloadResponseSwag'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.SwaggRespError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.SwaggRespError'
+      summary: Download Instagram media
+      tags:
+      - tools
   /tools/json/format:
     post:
       consumes:
