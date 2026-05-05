@@ -14,6 +14,9 @@ import (
 	"github.com/kekasicoid/go-api-tools/internal/domain"
 )
 
+// browserUserAgent is the User-Agent header sent with every request to Instagram.
+const browserUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
 // balancedJSON extracts the first balanced JSON object that starts at or after
 // the given offset in s. It properly skips string literals so embedded braces
 // inside strings are not counted.
@@ -93,7 +96,8 @@ func (s *Scraper) Download(rawURL string) (domain.InstagramMediaInfo, error) {
 		return domain.InstagramMediaInfo{}, err
 	}
 
-	// Strategy 5: try Instagram's lightweight JSON endpoint as a last resort.
+	// Strategy 5 (last resort): try Instagram's lightweight JSON endpoint.
+	// Strategies 1-4 are attempted inside extractFromHTML above.
 	if len(info.Items) == 0 {
 		if apiInfo, ok := s.tryAPIEndpoint(shortcode, postType); ok && len(apiInfo.Items) > 0 {
 			info = apiInfo
@@ -161,7 +165,7 @@ func (s *Scraper) fetchPage(pageURL string) (string, error) {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+	req.Header.Set("User-Agent", browserUserAgent)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("Connection", "keep-alive")
@@ -202,7 +206,7 @@ func (s *Scraper) tryAPIEndpoint(shortcode, postType string) (domain.InstagramMe
 		return domain.InstagramMediaInfo{}, false
 	}
 
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+	req.Header.Set("User-Agent", browserUserAgent)
 	req.Header.Set("Accept", "application/json, text/javascript, */*; q=0.01")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("X-Requested-With", "XMLHttpRequest")
