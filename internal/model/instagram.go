@@ -2,7 +2,7 @@ package model
 
 // InstagramDownloadRequest is the request body for the Instagram download endpoint.
 type InstagramDownloadRequest struct {
-	URL string `json:"url" example:"https://www.instagram.com/p/XXXX/"`
+	URL string `json:"url" example:"https://www.instagram.com/arditya.kekasi/p/C2uaPTYShvn/"`
 }
 
 // InstagramMediaItem represents a single downloadable media item.

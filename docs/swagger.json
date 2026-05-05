@@ -17,6 +17,59 @@
     "host": "localhost:7070",
     "basePath": "/",
     "paths": {
+        "/tools/instagram/download": {
+            "post": {
+                "description": "Extract direct download URLs for photos, videos, and reels from a public Instagram post URL. Stories are only supported when the account is public.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tools"
+                ],
+                "summary": "Download Instagram media",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID (alphanumeric, max 50 chars)",
+                        "name": "request-id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Instagram post URL",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.InstagramDownloadRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.InstagramDownloadResponseSwag"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.SwaggRespError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.SwaggRespError"
+                        }
+                    }
+                }
+            }
+        },
         "/tools/json/format": {
             "post": {
                 "description": "Format a raw JSON string into pretty JSON",
@@ -152,6 +205,71 @@
                 "response_refnum": {
                     "type": "string",
                     "example": ""
+                }
+            }
+        },
+        "model.InstagramDownloadRequest": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "example": "https://www.instagram.com/arditya.kekasi/p/C2uaPTYShvn/"
+                }
+            }
+        },
+        "model.InstagramDownloadResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.InstagramMediaItem"
+                    }
+                },
+                "post_type": {
+                    "type": "string",
+                    "example": "reel"
+                }
+            }
+        },
+        "model.InstagramDownloadResponseSwag": {
+            "type": "object",
+            "properties": {
+                "response_code": {
+                    "type": "string",
+                    "example": "200"
+                },
+                "response_data": {
+                    "$ref": "#/definitions/model.InstagramDownloadResponse"
+                },
+                "response_desc": {
+                    "type": "string",
+                    "example": "success"
+                },
+                "response_id": {
+                    "type": "string",
+                    "example": "abc-123"
+                },
+                "response_refnum": {
+                    "type": "string",
+                    "example": ""
+                }
+            }
+        },
+        "model.InstagramMediaItem": {
+            "type": "object",
+            "properties": {
+                "media_type": {
+                    "type": "string",
+                    "example": "photo"
+                },
+                "media_url": {
+                    "type": "string",
+                    "example": "https://scontent.cdninstagram.com/..."
+                },
+                "thumb_url": {
+                    "type": "string",
+                    "example": "https://scontent.cdninstagram.com/..."
                 }
             }
         },
