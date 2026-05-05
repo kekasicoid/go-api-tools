@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"regexp"
@@ -348,19 +349,19 @@ func findNodeByShortcodeOrCode(v interface{}, shortcode string) map[string]inter
 // Instagram always populates these for public posts so link-preview services work.
 // This is a reliable fallback for single photo and video posts, but carousel
 // posts only have their first item in OG tags.
-func extractFromOGMeta(html, postType string) domain.InstagramMediaInfo {
+func extractFromOGMeta(pageHTML, postType string) domain.InstagramMediaInfo {
 	info := domain.InstagramMediaInfo{PostType: postType}
 
 	ogProps := make(map[string]string) // property -> content
 
-	for _, m := range ogPropContentRe.FindAllStringSubmatch(html, -1) {
+	for _, m := range ogPropContentRe.FindAllStringSubmatch(pageHTML, -1) {
 		if len(m) == 3 {
-			ogProps[m[1]] = m[2]
+			ogProps[m[1]] = html.UnescapeString(m[2])
 		}
 	}
-	for _, m := range ogContentPropRe.FindAllStringSubmatch(html, -1) {
+	for _, m := range ogContentPropRe.FindAllStringSubmatch(pageHTML, -1) {
 		if len(m) == 3 {
-			ogProps[m[2]] = m[1]
+			ogProps[m[2]] = html.UnescapeString(m[1])
 		}
 	}
 
