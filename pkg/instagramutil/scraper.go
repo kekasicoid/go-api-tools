@@ -14,6 +14,53 @@ import (
 	"github.com/kekasicoid/go-api-tools/internal/domain"
 )
 
+// browserUserAgent is the User-Agent header sent with every request to Instagram.
+const browserUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+// balancedJSON extracts the first balanced JSON object that starts at or after
+// the given offset in s. It properly skips string literals so embedded braces
+// inside strings are not counted.
+func balancedJSON(s string, offset int) string {
+	start := strings.Index(s[offset:], "{")
+	if start == -1 {
+		return ""
+	}
+	start += offset
+
+	depth := 0
+	inString := false
+	escape := false
+
+	for i := start; i < len(s); i++ {
+		c := s[i]
+		if escape {
+			escape = false
+			continue
+		}
+		if c == '\\' && inString {
+			escape = true
+			continue
+		}
+		if c == '"' {
+			inString = !inString
+			continue
+		}
+		if inString {
+			continue
+		}
+		switch c {
+		case '{':
+			depth++
+		case '}':
+			depth--
+			if depth == 0 {
+				return s[start : i+1]
+			}
+		}
+	}
+	return ""
+}
+
 // Scraper implements domain.InstagramDownloader via HTML scraping.
 type Scraper struct {
 	client *http.Client
@@ -47,6 +94,14 @@ func (s *Scraper) Download(rawURL string) (domain.InstagramMediaInfo, error) {
 	info, err := extractFromHTML(body, shortcode, postType)
 	if err != nil {
 		return domain.InstagramMediaInfo{}, err
+	}
+
+	// Strategy 5 (last resort): try Instagram's lightweight JSON endpoint.
+	// Strategies 1-4 are attempted inside extractFromHTML above.
+	if len(info.Items) == 0 {
+		if apiInfo, ok := s.tryAPIEndpoint(shortcode, postType); ok && len(apiInfo.Items) > 0 {
+			info = apiInfo
+		}
 	}
 
 	if len(info.Items) == 0 {
@@ -110,7 +165,7 @@ func (s *Scraper) fetchPage(pageURL string) (string, error) {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+	req.Header.Set("User-Agent", browserUserAgent)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("Connection", "keep-alive")
@@ -139,6 +194,68 @@ func (s *Scraper) fetchPage(pageURL string) (string, error) {
 	return string(bodyBytes), nil
 }
 
+// tryAPIEndpoint attempts to fetch media info via Instagram's lightweight JSON
+// endpoint (?__a=1&__d=dis). This works for some public posts without a session
+// cookie, and is used as a last resort when HTML parsing yields nothing.
+// It returns (info, true) on success, or (zero, false) on any failure.
+func (s *Scraper) tryAPIEndpoint(shortcode, postType string) (domain.InstagramMediaInfo, bool) {
+	apiURL := fmt.Sprintf("https://www.instagram.com/p/%s/?__a=1&__d=dis", shortcode)
+
+	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
+	if err != nil {
+		return domain.InstagramMediaInfo{}, false
+	}
+
+	req.Header.Set("User-Agent", browserUserAgent)
+	req.Header.Set("Accept", "application/json, text/javascript, */*; q=0.01")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	req.Header.Set("X-Requested-With", "XMLHttpRequest")
+	req.Header.Set("Referer", "https://www.instagram.com/")
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return domain.InstagramMediaInfo{}, false
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return domain.InstagramMediaInfo{}, false
+	}
+
+	const maxBytes = 5 * 1024 * 1024
+	bodyBytes, err := io.ReadAll(io.LimitReader(resp.Body, maxBytes))
+	if err != nil {
+		return domain.InstagramMediaInfo{}, false
+	}
+
+	var root interface{}
+	if err := json.Unmarshal(bodyBytes, &root); err != nil {
+		return domain.InstagramMediaInfo{}, false
+	}
+
+	node := findNodeByShortcodeOrCode(root, shortcode)
+	if node == nil {
+		// Some responses wrap the media under "items":[{...}].
+		if rootMap, ok := root.(map[string]interface{}); ok {
+			if items, ok := rootMap["items"].([]interface{}); ok && len(items) > 0 {
+				if first, ok := items[0].(map[string]interface{}); ok {
+					node = first
+				}
+			}
+		}
+	}
+
+	if node == nil {
+		return domain.InstagramMediaInfo{}, false
+	}
+
+	info := extractMediaFromNode(node, postType)
+	if len(info.Items) == 0 {
+		return domain.InstagramMediaInfo{}, false
+	}
+	return info, true
+}
+
 // ---- HTML parsing helpers ---------------------------------------------------
 
 // rehydrationRe matches the __UNIVERSAL_DATA_FOR_REHYDRATION__ script tag (may span lines).
@@ -147,13 +264,22 @@ var rehydrationRe = regexp.MustCompile(`(?s)<script[^>]+id="__UNIVERSAL_DATA_FOR
 // sharedDataRe matches the legacy window._sharedData assignment.
 var sharedDataRe = regexp.MustCompile(`(?s)window\._sharedData\s*=\s*(\{.*?\});\s*</script>`)
 
+// additionalDataMarker is the JS function name used by the window.__additionalDataLoaded strategy.
+const additionalDataMarker = "window.__additionalDataLoaded("
+
+// ogPropContentRe matches <meta property="..." content="..."> (property before content).
+var ogPropContentRe = regexp.MustCompile(`<meta\b[^>]*\bproperty="([^"]+)"[^>]*\bcontent="([^"]+)"`)
+
+// ogContentPropRe matches <meta content="..." property="..."> (content before property).
+var ogContentPropRe = regexp.MustCompile(`<meta\b[^>]*\bcontent="([^"]+)"[^>]*\bproperty="([^"]+)"`)
+
 // extractFromHTML tries each known JSON embedding strategy to find media data.
 func extractFromHTML(html, shortcode, postType string) (domain.InstagramMediaInfo, error) {
 	// Strategy 1: __UNIVERSAL_DATA_FOR_REHYDRATION__
 	if matches := rehydrationRe.FindStringSubmatch(html); len(matches) >= 2 {
 		var root interface{}
 		if err := json.Unmarshal([]byte(matches[1]), &root); err == nil {
-			if node := findNodeByShortcode(root, shortcode); node != nil {
+			if node := findNodeByShortcodeOrCode(root, shortcode); node != nil {
 				return extractMediaFromNode(node, postType), nil
 			}
 		}
@@ -163,36 +289,102 @@ func extractFromHTML(html, shortcode, postType string) (domain.InstagramMediaInf
 	if matches := sharedDataRe.FindStringSubmatch(html); len(matches) >= 2 {
 		var root interface{}
 		if err := json.Unmarshal([]byte(matches[1]), &root); err == nil {
-			if node := findNodeByShortcode(root, shortcode); node != nil {
+			if node := findNodeByShortcodeOrCode(root, shortcode); node != nil {
 				return extractMediaFromNode(node, postType), nil
 			}
 		}
 	}
 
+	// Strategy 3: window.__additionalDataLoaded
+	if idx := strings.Index(html, additionalDataMarker); idx != -1 {
+		jsonStr := balancedJSON(html, idx+len(additionalDataMarker))
+		if jsonStr != "" {
+			var root interface{}
+			if err := json.Unmarshal([]byte(jsonStr), &root); err == nil {
+				if node := findNodeByShortcodeOrCode(root, shortcode); node != nil {
+					return extractMediaFromNode(node, postType), nil
+				}
+			}
+		}
+	}
+
+	// Strategy 4: Open Graph meta tags — reliable for public single-photo / video posts
+	// because Instagram populates OG tags for link-preview purposes.
+	if info := extractFromOGMeta(html, postType); len(info.Items) > 0 {
+		return info, nil
+	}
+
 	return domain.InstagramMediaInfo{PostType: postType}, nil
 }
 
-// findNodeByShortcode recursively searches for a JSON object whose "shortcode"
-// field equals the given shortcode.
-func findNodeByShortcode(v interface{}, shortcode string) map[string]interface{} {
+// findNodeByShortcodeOrCode recursively searches for a JSON object whose
+// "shortcode" or "code" field (both used across Instagram API versions) equals
+// the given shortcode.
+func findNodeByShortcodeOrCode(v interface{}, shortcode string) map[string]interface{} {
 	switch node := v.(type) {
 	case map[string]interface{}:
 		if sc, ok := node["shortcode"].(string); ok && sc == shortcode {
 			return node
 		}
+		if sc, ok := node["code"].(string); ok && sc == shortcode {
+			return node
+		}
 		for _, val := range node {
-			if found := findNodeByShortcode(val, shortcode); found != nil {
+			if found := findNodeByShortcodeOrCode(val, shortcode); found != nil {
 				return found
 			}
 		}
 	case []interface{}:
 		for _, item := range node {
-			if found := findNodeByShortcode(item, shortcode); found != nil {
+			if found := findNodeByShortcodeOrCode(item, shortcode); found != nil {
 				return found
 			}
 		}
 	}
 	return nil
+}
+
+// extractFromOGMeta extracts media info from Open Graph meta tags.
+// Instagram always populates these for public posts so link-preview services work.
+// This is a reliable fallback for single photo and video posts, but carousel
+// posts only have their first item in OG tags.
+func extractFromOGMeta(html, postType string) domain.InstagramMediaInfo {
+	info := domain.InstagramMediaInfo{PostType: postType}
+
+	ogProps := make(map[string]string) // property -> content
+
+	for _, m := range ogPropContentRe.FindAllStringSubmatch(html, -1) {
+		if len(m) == 3 {
+			ogProps[m[1]] = m[2]
+		}
+	}
+	for _, m := range ogContentPropRe.FindAllStringSubmatch(html, -1) {
+		if len(m) == 3 {
+			ogProps[m[2]] = m[1]
+		}
+	}
+
+	videoURL := ogProps["og:video:secure_url"]
+	if videoURL == "" {
+		videoURL = ogProps["og:video"]
+	}
+	imageURL := ogProps["og:image"]
+
+	if videoURL != "" {
+		info.Items = append(info.Items, domain.InstagramMedia{
+			MediaType: "video",
+			MediaURL:  videoURL,
+			ThumbURL:  imageURL,
+		})
+	} else if imageURL != "" {
+		info.Items = append(info.Items, domain.InstagramMedia{
+			MediaType: "photo",
+			MediaURL:  imageURL,
+			ThumbURL:  imageURL,
+		})
+	}
+
+	return info
 }
 
 // extractMediaFromNode extracts InstagramMediaInfo from a parsed media JSON node.
