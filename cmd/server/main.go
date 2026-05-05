@@ -14,6 +14,7 @@ import (
 	httpDelivery "github.com/kekasicoid/go-api-tools/internal/delivery/http"
 	"github.com/kekasicoid/go-api-tools/internal/middleware"
 	appusecase "github.com/kekasicoid/go-api-tools/internal/usecase"
+	"github.com/kekasicoid/go-api-tools/pkg/instagramutil"
 	"github.com/kekasicoid/go-api-tools/pkg/jsonutil"
 	"github.com/kekasicoid/go-api-tools/pkg/jwtutil"
 	"github.com/kekasicoid/go-api-tools/pkg/logger"
@@ -57,6 +58,10 @@ func main() {
 	jwtUsecase := appusecase.NewJWTUsecase(jwtDecoder)
 	jwtHandler := httpDelivery.NewJWTHandler(jwtUsecase)
 
+	igScraper := instagramutil.NewScraper()
+	igUsecase := appusecase.NewInstagramUsecase(igScraper, rdb)
+	igHandler := httpDelivery.NewInstagramHandler(igUsecase)
+
 	// router
 	r := httpDelivery.NewRouter()
 
@@ -67,7 +72,7 @@ func main() {
 	// r.Use(middleware.RequestLogger())
 
 	// routes
-	httpDelivery.RegisterRoutes(r, handler, jwtHandler)
+	httpDelivery.RegisterRoutes(r, handler, jwtHandler, igHandler)
 
 	// run
 	port := os.Getenv("HTTP_PORT")

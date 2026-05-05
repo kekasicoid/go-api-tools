@@ -13,11 +13,12 @@ func NewRouter() *gin.Engine {
 	return gin.Default()
 }
 
-func RegisterRoutes(r *gin.Engine, h *Handler, jwtH *JWTHandler) {
+func RegisterRoutes(r *gin.Engine, h *Handler, jwtH *JWTHandler, igH *InstagramHandler) {
 
 	tools := r.Group("/tools")
 	tools.POST("/json/format", h.FormatJSON)
 	tools.POST("/jwt/decode-validation", jwtH.DecodeValidateJWT)
+	tools.POST("/instagram/download", igH.DownloadMedia)
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
