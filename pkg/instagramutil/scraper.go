@@ -63,7 +63,7 @@ func (s *Scraper) Download(rawURL string) (domain.InstagramMediaInfo, error) {
 //   - /tv/{shortcode}
 //   - /stories/{username}/{mediaID}
 func parseInstagramURL(rawURL string) (postType, shortcode string, err error) {
-	// Normalise: strip trailing slash and query string for matching.
+	// Normalize: strip trailing slash and query string for matching.
 	u := strings.Split(strings.TrimRight(rawURL, "/"), "?")[0]
 	parts := strings.Split(u, "/")
 
@@ -130,8 +130,8 @@ func (s *Scraper) fetchPage(pageURL string) (string, error) {
 		return "", fmt.Errorf("Instagram returned HTTP %d", resp.StatusCode)
 	}
 
-	const maxBody = 10 * 1024 * 1024 // 10 MB safety cap
-	bodyBytes, err := io.ReadAll(io.LimitReader(resp.Body, maxBody))
+	const maxResponseBodyBytes = 10 * 1024 * 1024 // 10 MB safety cap
+	bodyBytes, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodyBytes))
 	if err != nil {
 		return "", fmt.Errorf("failed to read response body: %w", err)
 	}

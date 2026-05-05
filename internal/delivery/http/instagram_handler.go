@@ -2,6 +2,7 @@
 package http
 
 import (
+	"net/url"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -47,8 +48,8 @@ func (h *InstagramHandler) DownloadMedia(c *gin.Context) {
 		return
 	}
 
-	if !strings.Contains(req.URL, "instagram.com") {
-		model.RespBadRequest(c, "url must be an Instagram URL")
+	if !isInstagramURL(req.URL) {
+		model.RespBadRequest(c, "url must be an Instagram URL (instagram.com)")
 		return
 	}
 
@@ -72,4 +73,14 @@ func (h *InstagramHandler) DownloadMedia(c *gin.Context) {
 	}
 
 	model.RespSuccess(c, "success", resp)
+}
+
+// isInstagramURL checks that the URL's host is instagram.com or www.instagram.com.
+func isInstagramURL(rawURL string) bool {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(parsed.Hostname())
+	return host == "instagram.com" || host == "www.instagram.com"
 }
